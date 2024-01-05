@@ -23,6 +23,26 @@ data class WebsocketClient(
     }
 }
 
+data class WebsocketClientList(
+    private val clients: Collection<WebsocketClient>
+) {
+    fun except(toExclude: WebsocketClient) = WebsocketClientList(
+        clients.filter { c ->
+            c.session.id != toExclude.session.id
+        }
+    )
+
+    fun <R> map(func: (WebsocketClient) -> R): Collection<R> {
+        return clients.map(func)
+    }
+
+    fun broadcast(type: String, data: JsonObject) {
+        clients.forEach { c ->
+            c.send(type, data)
+        }
+    }
+}
+
 @ApplicationScoped
 class WebSocketClientStore {
     private val clients = ConcurrentHashMap<String, WebsocketClient>()
@@ -51,8 +71,8 @@ class WebSocketClientStore {
         return clients[session.id]
     }
 
-    fun listClients(): Collection<WebsocketClient> {
-        return clients.values
+    fun listClients(): WebsocketClientList {
+        return WebsocketClientList(clients.values)
     }
 }
 

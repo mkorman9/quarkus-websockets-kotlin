@@ -25,14 +25,12 @@ class ChatWebSocket(
     fun onClose(session: Session, reason: CloseReason) {
         store.findClient(session)?.let { clientToClose ->
             store.listClients()
-                .filter { c -> c.session.id != clientToClose.session.id }
-                .forEach { c ->
-                    c.send(
-                        "USER_LEFT",
-                        JsonObject.of()
-                            .put("username", clientToClose.username)
-                    )
-                }
+                .except(clientToClose)
+                .broadcast(
+                    "USER_LEFT",
+                    JsonObject.of()
+                        .put("username", clientToClose.username)
+                )
 
             if (reason.reasonPhrase == "leaving") {
                 log.info("${clientToClose.username} left")
@@ -84,14 +82,12 @@ class ChatWebSocket(
         )
 
         store.listClients()
-            .filter { c -> c.session.id != joiningClient.session.id }
-            .forEach { c ->
-                c.send(
-                    "USER_JOINED",
-                    JsonObject.of()
-                        .put("username", joiningClient.username)
-                )
-            }
+            .except(joiningClient)
+            .broadcast(
+                "USER_JOINED",
+                JsonObject.of()
+                    .put("username", joiningClient.username)
+            )
 
         log.info("${joiningClient.username} joined")
     }
@@ -110,13 +106,12 @@ class ChatWebSocket(
 
         log.info("[${client.username}] ${chatMessage.text}")
 
-        store.listClients().forEach { c ->
-            c.send(
+        store.listClients()
+            .broadcast(
                 "CHAT_MESSAGE",
                 JsonObject.of()
                     .put("username", client.username)
                     .put("text", chatMessage.text)
             )
-        }
     }
 }
