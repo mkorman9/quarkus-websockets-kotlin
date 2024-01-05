@@ -32,9 +32,7 @@ data class ChatUsersList(
         }
     )
 
-    fun <R> map(func: (ChatUser) -> R): Collection<R> {
-        return users.map(func)
-    }
+    fun list(): List<ChatUser> = users.toList()
 
     fun broadcast(type: String, data: JsonObject) {
         users.forEach { c ->
@@ -45,7 +43,7 @@ data class ChatUsersList(
 
 @ApplicationScoped
 class ChatUsersStore {
-    private val users = ConcurrentHashMap<String, ChatUser>()
+    private val activeUsers = ConcurrentHashMap<String, ChatUser>()
 
     fun register(session: Session, username: String): ChatUser {
         val user = ChatUser(
@@ -53,10 +51,10 @@ class ChatUsersStore {
             username = username
         )
 
-        if (users.values.any { c -> c.username == username && c.session.id != session.id }) {
+        if (activeUsers.values.any { c -> c.username == username && c.session.id != session.id }) {
             throw RegisterException("duplicate_username")
         }
-        if (users.putIfAbsent(session.id, user) != null) {
+        if (activeUsers.putIfAbsent(session.id, user) != null) {
             throw RegisterException("already_joined")
         }
 
@@ -64,16 +62,14 @@ class ChatUsersStore {
     }
 
     fun unregister(session: Session) {
-        users.remove(session.id)
+        activeUsers.remove(session.id)
     }
 
     fun findUser(session: Session): ChatUser? {
-        return users[session.id]
+        return activeUsers[session.id]
     }
 
-    fun listUsers(): ChatUsersList {
-        return ChatUsersList(users.values)
-    }
+    val users get() = ChatUsersList(activeUsers.values)
 }
 
 class RegisterException(val reason: String) : RuntimeException()
