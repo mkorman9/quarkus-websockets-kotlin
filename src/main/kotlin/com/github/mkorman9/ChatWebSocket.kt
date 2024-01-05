@@ -23,8 +23,7 @@ class ChatWebSocket(
 
     @OnClose
     fun onClose(session: Session, reason: CloseReason) {
-        val client = store.findClient(session)
-        if (client != null) {
+        store.findClient(session)?.let { client ->
             store.findClients()
                 .filter { c -> client.session.id != c.session.id }
                 .forEach { c ->
