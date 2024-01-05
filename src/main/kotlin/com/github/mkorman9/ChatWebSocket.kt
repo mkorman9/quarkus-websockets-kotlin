@@ -23,21 +23,21 @@ class ChatWebSocket(
 
     @OnClose
     fun onClose(session: Session, reason: CloseReason) {
-        store.findClient(session)?.let { client ->
+        store.findClient(session)?.let { clientToClose ->
             store.findClients()
-                .filter { c -> client.session.id != c.session.id }
+                .filter { c -> c.session.id != clientToClose.session.id }
                 .forEach { c ->
                     c.send(
                         "USER_LEFT",
                         JsonObject.of()
-                            .put("username", client.username)
+                            .put("username", clientToClose.username)
                     )
                 }
 
             if (reason.reasonPhrase == "leaving") {
-                log.info("${client.username} left")
+                log.info("${clientToClose.username} left")
             } else {
-                log.info("${client.username} timed out")
+                log.info("${clientToClose.username} timed out")
             }
         }
 
@@ -63,7 +63,7 @@ class ChatWebSocket(
     }
 
     private fun onJoinRequest(session: Session, joinRequest: JoinRequest) {
-        val client = try {
+        val joiningClient = try {
             store.register(session, joinRequest.username)
         } catch (e: RegisterException) {
             WebsocketClient.send(
@@ -75,10 +75,10 @@ class ChatWebSocket(
             return
         }
 
-        client.send(
+        joiningClient.send(
             "JOIN_CONFIRMATION",
             JsonObject.of()
-                .put("username", client.username)
+                .put("username", joiningClient.username)
                 .put("users", store.findClients().map { c ->
                     JsonObject.of()
                         .put("username", c.username)
@@ -86,16 +86,16 @@ class ChatWebSocket(
         )
 
         store.findClients()
-            .filter { c -> c.session.id != session.id }
+            .filter { c -> c.session.id != joiningClient.session.id }
             .forEach { c ->
                 c.send(
                     "USER_JOINED",
                     JsonObject.of()
-                        .put("username", c.username)
+                        .put("username", joiningClient.username)
                 )
             }
 
-        log.info("${client.username} joined")
+        log.info("${joiningClient.username} joined")
     }
 
     private fun onLeaveRequest(session: Session, leaveRequest: LeaveRequest) {
