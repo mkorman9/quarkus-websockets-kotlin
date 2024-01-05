@@ -51,7 +51,7 @@ class WebSocketClientStore {
         return clients[session.id]
     }
 
-    fun findClients(): Collection<WebsocketClient> {
+    fun listClients(): Collection<WebsocketClient> {
         return clients.values
     }
 }

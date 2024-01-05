@@ -24,7 +24,7 @@ class ChatWebSocket(
     @OnClose
     fun onClose(session: Session, reason: CloseReason) {
         store.findClient(session)?.let { clientToClose ->
-            store.findClients()
+            store.listClients()
                 .filter { c -> c.session.id != clientToClose.session.id }
                 .forEach { c ->
                     c.send(
@@ -77,13 +77,13 @@ class ChatWebSocket(
             "JOIN_CONFIRMATION",
             JsonObject.of()
                 .put("username", joiningClient.username)
-                .put("users", store.findClients().map { c ->
+                .put("users", store.listClients().map { c ->
                     JsonObject.of()
                         .put("username", c.username)
                 })
         )
 
-        store.findClients()
+        store.listClients()
             .filter { c -> c.session.id != joiningClient.session.id }
             .forEach { c ->
                 c.send(
@@ -110,7 +110,7 @@ class ChatWebSocket(
 
         log.info("[${client.username}] ${chatMessage.text}")
 
-        store.findClients().forEach { c ->
+        store.listClients().forEach { c ->
             c.send(
                 "CHAT_MESSAGE",
                 JsonObject.of()
