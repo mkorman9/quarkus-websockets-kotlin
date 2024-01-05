@@ -8,7 +8,7 @@ data class ChatMessage(
 )
 
 data class JoinRequest(
-    val username: String
+    @field:NotBlank val username: String
 )
 
 data class LeaveRequest(
