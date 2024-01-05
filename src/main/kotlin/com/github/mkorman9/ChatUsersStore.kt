@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.websocket.Session
 import java.util.concurrent.ConcurrentHashMap
 
-data class WebsocketClient(
+data class ChatUser(
     val session: Session,
     val username: String
 ) {
@@ -23,56 +23,56 @@ data class WebsocketClient(
     }
 }
 
-data class WebsocketClientList(
-    private val clients: Collection<WebsocketClient>
+data class ChatUsersList(
+    private val users: Collection<ChatUser>
 ) {
-    fun except(toExclude: WebsocketClient) = WebsocketClientList(
-        clients.filter { c ->
+    fun except(toExclude: ChatUser) = ChatUsersList(
+        users.filter { c ->
             c.session.id != toExclude.session.id
         }
     )
 
-    fun <R> map(func: (WebsocketClient) -> R): Collection<R> {
-        return clients.map(func)
+    fun <R> map(func: (ChatUser) -> R): Collection<R> {
+        return users.map(func)
     }
 
     fun broadcast(type: String, data: JsonObject) {
-        clients.forEach { c ->
+        users.forEach { c ->
             c.send(type, data)
         }
     }
 }
 
 @ApplicationScoped
-class WebSocketClientStore {
-    private val clients = ConcurrentHashMap<String, WebsocketClient>()
+class ChatUsersStore {
+    private val users = ConcurrentHashMap<String, ChatUser>()
 
-    fun register(session: Session, username: String): WebsocketClient {
-        val client = WebsocketClient(
+    fun register(session: Session, username: String): ChatUser {
+        val user = ChatUser(
             session = session,
             username = username
         )
 
-        if (clients.values.any { c -> c.username == username && c.session.id != session.id }) {
+        if (users.values.any { c -> c.username == username && c.session.id != session.id }) {
             throw RegisterException("duplicate_username")
         }
-        if (clients.putIfAbsent(session.id, client) != null) {
+        if (users.putIfAbsent(session.id, user) != null) {
             throw RegisterException("already_joined")
         }
 
-        return client
+        return user
     }
 
     fun unregister(session: Session) {
-        clients.remove(session.id)
+        users.remove(session.id)
     }
 
-    fun findClient(session: Session): WebsocketClient? {
-        return clients[session.id]
+    fun findUser(session: Session): ChatUser? {
+        return users[session.id]
     }
 
-    fun listClients(): WebsocketClientList {
-        return WebsocketClientList(clients.values)
+    fun listUsers(): ChatUsersList {
+        return ChatUsersList(users.values)
     }
 }
 

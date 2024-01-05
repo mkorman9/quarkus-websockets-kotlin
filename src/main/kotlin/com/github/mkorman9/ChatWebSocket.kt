@@ -15,7 +15,7 @@ import org.jboss.logging.Logger
 class ChatWebSocket(
     private val log: Logger,
     private val packetParser: PacketParser,
-    private val store: WebSocketClientStore
+    private val chatUsersStore: ChatUsersStore
 ) {
     @OnOpen
     fun onOpen(session: Session) {
@@ -23,23 +23,23 @@ class ChatWebSocket(
 
     @OnClose
     fun onClose(session: Session, reason: CloseReason) {
-        store.findClient(session)?.let { clientToClose ->
-            store.listClients()
-                .except(clientToClose)
+        chatUsersStore.findUser(session)?.let { userToClose ->
+            chatUsersStore.listUsers()
+                .except(userToClose)
                 .broadcast(
                     "USER_LEFT",
                     JsonObject.of()
-                        .put("username", clientToClose.username)
+                        .put("username", userToClose.username)
                 )
 
             if (reason.reasonPhrase == "leaving") {
-                log.info("${clientToClose.username} left")
+                log.info("${userToClose.username} left")
             } else {
-                log.info("${clientToClose.username} timed out")
+                log.info("${userToClose.username} timed out")
             }
         }
 
-        store.unregister(session)
+        chatUsersStore.unregister(session)
     }
 
     @OnMessage
@@ -59,10 +59,10 @@ class ChatWebSocket(
     }
 
     private fun onJoinRequest(session: Session, joinRequest: JoinRequest) {
-        val joiningClient = try {
-            store.register(session, joinRequest.username)
+        val joiningUser = try {
+            chatUsersStore.register(session, joinRequest.username)
         } catch (e: RegisterException) {
-            WebsocketClient.send(
+            ChatUser.send(
                 session,
                 "JOIN_REJECTION",
                 JsonObject.of()
@@ -71,25 +71,27 @@ class ChatWebSocket(
             return
         }
 
-        joiningClient.send(
+        joiningUser.send(
             "JOIN_CONFIRMATION",
             JsonObject.of()
-                .put("username", joiningClient.username)
-                .put("users", store.listClients().map { c ->
-                    JsonObject.of()
-                        .put("username", c.username)
-                })
+                .put("username", joiningUser.username)
+                .put("users",
+                    chatUsersStore.listUsers().map { c ->
+                        JsonObject.of()
+                            .put("username", c.username)
+                    }
+                )
         )
 
-        store.listClients()
-            .except(joiningClient)
+        chatUsersStore.listUsers()
+            .except(joiningUser)
             .broadcast(
                 "USER_JOINED",
                 JsonObject.of()
-                    .put("username", joiningClient.username)
+                    .put("username", joiningUser.username)
             )
 
-        log.info("${joiningClient.username} joined")
+        log.info("${joiningUser.username} joined")
     }
 
     private fun onLeaveRequest(session: Session, leaveRequest: LeaveRequest) {
@@ -102,15 +104,15 @@ class ChatWebSocket(
     }
 
     private fun onChatMessage(session: Session, chatMessage: ChatMessage) {
-        val client = store.findClient(session) ?: return
+        val user = chatUsersStore.findUser(session) ?: return
 
-        log.info("[${client.username}] ${chatMessage.text}")
+        log.info("[${user.username}] ${chatMessage.text}")
 
-        store.listClients()
+        chatUsersStore.listUsers()
             .broadcast(
                 "CHAT_MESSAGE",
                 JsonObject.of()
-                    .put("username", client.username)
+                    .put("username", user.username)
                     .put("text", chatMessage.text)
             )
     }
