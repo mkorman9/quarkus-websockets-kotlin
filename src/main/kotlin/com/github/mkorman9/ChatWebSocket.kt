@@ -46,15 +46,13 @@ class ChatWebSocket(
 
     @OnMessage
     fun onMessage(session: Session, data: String) {
-        try {
-            val packet = packetParser.parse(data)
-            onPacket(session, packet)
+        val packet = try {
+            packetParser.parse(data)
         } catch (e: PacketParsingException) {
             // ignore packet
+            return
         }
-    }
 
-    private fun onPacket(session: Session, packet: Packet) {
         when (packet.type) {
             PacketType.JOIN_REQUEST -> onJoinRequest(session, packet.data as JoinRequest)
             PacketType.LEAVE_REQUEST -> onLeaveRequest(session, packet.data as LeaveRequest)
