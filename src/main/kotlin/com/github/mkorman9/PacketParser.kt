@@ -36,7 +36,7 @@ class PacketParser(
 
 class PacketParsingException : RuntimeException()
 
-internal data class RawPacket(
+private data class RawPacket(
     val type: PacketType?,
     val data: Map<String, Any>?
 )
