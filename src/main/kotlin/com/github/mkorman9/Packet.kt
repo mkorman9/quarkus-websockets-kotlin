@@ -7,6 +7,11 @@ data class ChatMessage(
     @field:NotBlank val text: String
 )
 
+data class DirectMessage(
+    @field:NotBlank val to: String,
+    @field:NotBlank val text: String
+)
+
 data class JoinRequest(
     @field:NotBlank val username: String
 )
@@ -21,7 +26,8 @@ enum class PacketType(
 ) {
     JOIN_REQUEST(JoinRequest::class),
     LEAVE_REQUEST(LeaveRequest::class),
-    CHAT_MESSAGE(ChatMessage::class)
+    CHAT_MESSAGE(ChatMessage::class),
+    DIRECT_MESSAGE(DirectMessage::class)
 }
 
 data class Packet(

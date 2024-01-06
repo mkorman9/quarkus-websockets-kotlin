@@ -69,6 +69,10 @@ class ChatUsersStore {
         return activeUsers[session.id]
     }
 
+    fun findUserByUsername(username: String): ChatUser? {
+        return activeUsers.values.find { c -> c.username == username }
+    }
+
     val users get() = ChatUsersList(activeUsers.values)
 }
 

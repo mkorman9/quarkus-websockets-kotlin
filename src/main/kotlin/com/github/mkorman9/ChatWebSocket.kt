@@ -55,6 +55,7 @@ class ChatWebSocket(
             PacketType.JOIN_REQUEST -> onJoinRequest(session, packet.data as JoinRequest)
             PacketType.LEAVE_REQUEST -> onLeaveRequest(session, packet.data as LeaveRequest)
             PacketType.CHAT_MESSAGE -> onChatMessage(session, packet.data as ChatMessage)
+            PacketType.DIRECT_MESSAGE -> onDirectMessage(session, packet.data as DirectMessage)
         }
     }
 
@@ -115,5 +116,27 @@ class ChatWebSocket(
                     .put("username", user.username)
                     .put("text", chatMessage.text)
             )
+    }
+
+    private fun onDirectMessage(session: Session, directMessage: DirectMessage) {
+        val user = chatUsersStore.findUser(session) ?: return
+        val targetUser = chatUsersStore.findUserByUsername(directMessage.to)
+        if (targetUser == null) {
+            user.send(
+                "DIRECT_MESSAGE_NO_USER",
+                JsonObject.of()
+                    .put("username", directMessage.to)
+            )
+            return
+        }
+
+        log.info("[${user.username} -> ${targetUser.username}] ${directMessage.text}")
+
+        targetUser.send(
+            "DIRECT_MESSAGE",
+            JsonObject.of()
+                .put("from", user.username)
+                .put("text", directMessage.text)
+        )
     }
 }
