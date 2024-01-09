@@ -10,31 +10,29 @@ class PacketParser(
     private val objectMapper: ObjectMapper,
     private val validator: Validator
 ) {
-    fun parse(data: String): Packet {
+    fun parse(data: String): Packet? {
         try {
             val packet = objectMapper.readValue(data, RawPacket::class.java)
             if (packet.type == null || packet.data == null) {
-                throw PacketParsingException()
+                return null
             }
 
             val payload = objectMapper.convertValue(packet.data, packet.type.payload.java)
             if (validator.validate(payload).isNotEmpty()) {
-                throw PacketParsingException()
+                return null
             }
 
             return Packet(
                 type = packet.type,
                 data = payload
             )
-        } catch (e: JsonProcessingException) {
-            throw PacketParsingException()
-        } catch (e: IllegalArgumentException) {
-            throw PacketParsingException()
+        } catch (_: JsonProcessingException) {
+        } catch (_: IllegalArgumentException) {
         }
+
+        return null
     }
 }
-
-class PacketParsingException : RuntimeException()
 
 private data class RawPacket(
     val type: PacketType?,

@@ -44,12 +44,7 @@ class ChatWebSocket(
 
     @OnMessage
     fun onMessage(session: Session, data: String) {
-        val packet = try {
-            packetParser.parse(data)
-        } catch (e: PacketParsingException) {
-            // ignore packet
-            return
-        }
+        val packet = packetParser.parse(data) ?: return
 
         when (packet.type) {
             PacketType.JOIN_REQUEST -> onJoinRequest(session, packet.data as JoinRequest)
