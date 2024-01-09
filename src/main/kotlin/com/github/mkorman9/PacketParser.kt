@@ -1,6 +1,5 @@
 package com.github.mkorman9
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.validation.Validator
@@ -26,11 +25,9 @@ class PacketParser(
                 type = packet.type,
                 data = payload
             )
-        } catch (_: JsonProcessingException) {
-        } catch (_: IllegalArgumentException) {
+        } catch (_: Exception) {
+            return null
         }
-
-        return null
     }
 }
 
