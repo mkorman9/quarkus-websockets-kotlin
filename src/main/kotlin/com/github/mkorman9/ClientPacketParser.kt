@@ -11,7 +11,7 @@ class ClientPacketParser(
 ) {
     fun parse(data: String): ClientPacket? {
         try {
-            val rawPacket = objectMapper.readValue(data, RawPacket::class.java)
+            val rawPacket = objectMapper.readValue(data, RawClientPacket::class.java)
             if (rawPacket.type == null || rawPacket.data == null) {
                 return null
             }
@@ -28,7 +28,7 @@ class ClientPacketParser(
     }
 }
 
-private data class RawPacket(
+private data class RawClientPacket(
     val type: ClientPacketType?,
     val data: Map<String, Any>?
 )

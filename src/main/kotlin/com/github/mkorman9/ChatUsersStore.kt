@@ -52,12 +52,10 @@ class ChatUsersStore {
         )
 
         if (activeUsers.values.any { c -> c.username == username && c.session.id != session.id }) {
-            throw RegisterException("duplicate_username")
-        }
-        if (activeUsers.putIfAbsent(session.id, user) != null) {
-            throw RegisterException("already_joined")
+            throw DuplicateUsernameException()
         }
 
+        activeUsers[session.id] = user
         return user
     }
 
@@ -76,4 +74,4 @@ class ChatUsersStore {
     val users get() = ChatUsersList(activeUsers.values)
 }
 
-class RegisterException(val reason: String) : RuntimeException()
+class DuplicateUsernameException : RuntimeException()

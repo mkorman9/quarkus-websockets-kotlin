@@ -45,24 +45,30 @@ class ChatWebSocket(
     @OnMessage
     fun onMessage(session: Session, data: String) {
         val packet = clientPacketParser.parse(data) ?: return
+        val user = chatUsersStore.findUser(session)
 
-        when (packet) {
-            is JoinRequest -> onJoinRequest(session, packet)
-            is LeaveRequest -> onLeaveRequest(session, packet)
-            is ChatMessage -> onChatMessage(session, packet)
-            is DirectMessage -> onDirectMessage(session, packet)
+        if (user == null) {
+            when (packet) {
+                is JoinRequest -> onJoinRequest(session, packet)
+            }
+        } else {
+            when (packet) {
+                is LeaveRequest -> onLeaveRequest(user, packet)
+                is ChatMessage -> onChatMessage(user, packet)
+                is DirectMessage -> onDirectMessage(user, packet)
+            }
         }
     }
 
     private fun onJoinRequest(session: Session, joinRequest: JoinRequest) {
         val joiningUser = try {
             chatUsersStore.register(session, joinRequest.username)
-        } catch (e: RegisterException) {
+        } catch (e: DuplicateUsernameException) {
             ChatUser.send(
                 session,
                 "JOIN_REJECTION",
                 JsonObject.of()
-                    .put("reason", e.reason)
+                    .put("reason", "duplicate_username")
             )
             return
         }
@@ -90,8 +96,8 @@ class ChatWebSocket(
         log.info("${joiningUser.username} joined")
     }
 
-    private fun onLeaveRequest(session: Session, leaveRequest: LeaveRequest) {
-        session.close(
+    private fun onLeaveRequest(user: ChatUser, leaveRequest: LeaveRequest) {
+        user.session.close(
             CloseReason(
                 CloseReason.CloseCodes.NORMAL_CLOSURE,
                 "leaving"
@@ -99,9 +105,7 @@ class ChatWebSocket(
         )
     }
 
-    private fun onChatMessage(session: Session, chatMessage: ChatMessage) {
-        val user = chatUsersStore.findUser(session) ?: return
-
+    private fun onChatMessage(user: ChatUser, chatMessage: ChatMessage) {
         log.info("[${user.username}] ${chatMessage.text}")
 
         chatUsersStore.users
@@ -113,8 +117,7 @@ class ChatWebSocket(
             )
     }
 
-    private fun onDirectMessage(session: Session, directMessage: DirectMessage) {
-        val user = chatUsersStore.findUser(session) ?: return
+    private fun onDirectMessage(user: ChatUser, directMessage: DirectMessage) {
         val targetUser = chatUsersStore.findUserByUsername(directMessage.to)
         if (targetUser == null) {
             user.send(
