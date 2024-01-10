@@ -51,11 +51,14 @@ class ChatUsersStore {
             username = username
         )
 
-        if (activeUsers.values.any { c -> c.username == username && c.session.id != session.id }) {
-            throw DuplicateUsernameException()
+        activeUsers.compute(session.id) { _, _ ->
+            if (activeUsers.values.any { c -> c.username == username && c.session.id != session.id }) {
+                throw DuplicateUsernameException()
+            }
+
+            user
         }
 
-        activeUsers[session.id] = user
         return user
     }
 
