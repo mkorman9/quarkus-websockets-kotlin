@@ -5,26 +5,23 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.validation.Validator
 
 @ApplicationScoped
-class PacketParser(
+class ClientPacketParser(
     private val objectMapper: ObjectMapper,
     private val validator: Validator
 ) {
-    fun parse(data: String): Packet? {
+    fun parse(data: String): ClientPacket? {
         try {
-            val packet = objectMapper.readValue(data, RawPacket::class.java)
-            if (packet.type == null || packet.data == null) {
+            val rawPacket = objectMapper.readValue(data, RawPacket::class.java)
+            if (rawPacket.type == null || rawPacket.data == null) {
                 return null
             }
 
-            val payload = objectMapper.convertValue(packet.data, packet.type.payload.java)
-            if (validator.validate(payload).isNotEmpty()) {
+            val packet = objectMapper.convertValue(rawPacket.data, rawPacket.type.payload.java)
+            if (validator.validate(packet).isNotEmpty()) {
                 return null
             }
 
-            return Packet(
-                type = packet.type,
-                data = payload
-            )
+            return packet
         } catch (_: Exception) {
             return null
         }
@@ -32,6 +29,6 @@ class PacketParser(
 }
 
 private data class RawPacket(
-    val type: PacketType?,
+    val type: ClientPacketType?,
     val data: Map<String, Any>?
 )

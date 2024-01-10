@@ -14,7 +14,7 @@ import org.jboss.logging.Logger
 @ApplicationScoped
 class ChatWebSocket(
     private val log: Logger,
-    private val packetParser: PacketParser,
+    private val clientPacketParser: ClientPacketParser,
     private val chatUsersStore: ChatUsersStore
 ) {
     @OnOpen
@@ -44,13 +44,13 @@ class ChatWebSocket(
 
     @OnMessage
     fun onMessage(session: Session, data: String) {
-        val packet = packetParser.parse(data) ?: return
+        val packet = clientPacketParser.parse(data) ?: return
 
-        when (packet.type) {
-            PacketType.JOIN_REQUEST -> onJoinRequest(session, packet.data as JoinRequest)
-            PacketType.LEAVE_REQUEST -> onLeaveRequest(session, packet.data as LeaveRequest)
-            PacketType.CHAT_MESSAGE -> onChatMessage(session, packet.data as ChatMessage)
-            PacketType.DIRECT_MESSAGE -> onDirectMessage(session, packet.data as DirectMessage)
+        when (packet) {
+            is JoinRequest -> onJoinRequest(session, packet)
+            is LeaveRequest -> onLeaveRequest(session, packet)
+            is ChatMessage -> onChatMessage(session, packet)
+            is DirectMessage -> onDirectMessage(session, packet)
         }
     }
 
