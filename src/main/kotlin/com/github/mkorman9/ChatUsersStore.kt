@@ -43,7 +43,7 @@ data class ChatUsersList(
 
 @ApplicationScoped
 class ChatUsersStore {
-    private val activeUsers = ConcurrentHashMap<String, ChatUser>()
+    private val users = ConcurrentHashMap<String, ChatUser>()
 
     fun register(session: Session, username: String): ChatUser {
         val user = ChatUser(
@@ -51,8 +51,8 @@ class ChatUsersStore {
             username = username
         )
 
-        activeUsers.compute(session.id) { _, _ ->
-            if (activeUsers.values.any { c -> c.username == username && c.session.id != session.id }) {
+        users.compute(session.id) { _, _ ->
+            if (users.values.any { c -> c.username == username && c.session.id != session.id }) {
                 throw DuplicateUsernameException()
             }
 
@@ -63,18 +63,18 @@ class ChatUsersStore {
     }
 
     fun unregister(session: Session) {
-        activeUsers.remove(session.id)
+        users.remove(session.id)
     }
 
-    fun findUser(session: Session): ChatUser? {
-        return activeUsers[session.id]
+    fun findBySession(session: Session): ChatUser? {
+        return users[session.id]
     }
 
-    fun findUserByUsername(username: String): ChatUser? {
-        return activeUsers.values.find { c -> c.username == username }
+    fun findByUsername(username: String): ChatUser? {
+        return users.values.find { c -> c.username == username }
     }
 
-    val users get() = ChatUsersList(activeUsers.values)
+    val all get() = ChatUsersList(users.values)
 }
 
 class DuplicateUsernameException : RuntimeException()

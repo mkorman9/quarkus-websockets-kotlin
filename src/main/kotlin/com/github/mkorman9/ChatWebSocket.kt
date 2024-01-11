@@ -23,8 +23,8 @@ class ChatWebSocket(
 
     @OnClose
     fun onClose(session: Session, reason: CloseReason) {
-        chatUsersStore.findUser(session)?.let { userToClose ->
-            chatUsersStore.users
+        chatUsersStore.findBySession(session)?.let { userToClose ->
+            chatUsersStore.all
                 .except(userToClose)
                 .broadcast(
                     "USER_LEFT",
@@ -45,7 +45,7 @@ class ChatWebSocket(
     @OnMessage
     fun onMessage(session: Session, data: String) {
         val packet = clientPacketParser.parse(data) ?: return
-        val user = chatUsersStore.findUser(session)
+        val user = chatUsersStore.findBySession(session)
 
         if (user == null) {
             when (packet) {
@@ -78,14 +78,14 @@ class ChatWebSocket(
             JsonObject.of()
                 .put("username", joiningUser.username)
                 .put("users",
-                    chatUsersStore.users.list().map { c ->
+                    chatUsersStore.all.list().map { c ->
                         JsonObject.of()
                             .put("username", c.username)
                     }
                 )
         )
 
-        chatUsersStore.users
+        chatUsersStore.all
             .except(joiningUser)
             .broadcast(
                 "USER_JOINED",
@@ -108,7 +108,7 @@ class ChatWebSocket(
     private fun onChatMessage(user: ChatUser, chatMessage: ChatMessage) {
         log.info("[${user.username}] ${chatMessage.text}")
 
-        chatUsersStore.users
+        chatUsersStore.all
             .broadcast(
                 "CHAT_MESSAGE",
                 JsonObject.of()
@@ -118,7 +118,7 @@ class ChatWebSocket(
     }
 
     private fun onDirectMessage(user: ChatUser, directMessage: DirectMessage) {
-        val targetUser = chatUsersStore.findUserByUsername(directMessage.to)
+        val targetUser = chatUsersStore.findByUsername(directMessage.to)
         if (targetUser == null) {
             user.send(
                 "DIRECT_MESSAGE_NO_USER",
