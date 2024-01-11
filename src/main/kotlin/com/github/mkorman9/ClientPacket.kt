@@ -18,9 +18,7 @@ data class JoinRequest(
     @field:NotBlank val username: String
 ) : ClientPacket
 
-data class LeaveRequest(
-    val placeholder: String?
-) : ClientPacket
+class LeaveRequest : ClientPacket
 
 
 enum class ClientPacketType(
