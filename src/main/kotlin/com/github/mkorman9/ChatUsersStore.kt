@@ -56,7 +56,7 @@ class ChatUsersStore {
         )
 
         users.compute(session.id) { _, _ ->
-            if (users.values.any { c -> c.username == username && c.session.id != session.id }) {
+            if (users.values.any { c -> c.username == username }) {
                 throw DuplicateUsernameException()
             }
 
