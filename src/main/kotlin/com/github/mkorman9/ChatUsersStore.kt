@@ -36,13 +36,13 @@ data class ChatUsersList(
         }
     )
 
-    fun list(): List<ChatUser> = users.toList()
-
     fun broadcast(type: String, data: JsonObject) {
         users.forEach { c ->
             c.send(type, data)
         }
     }
+
+    val list get(): List<ChatUser> = users.toList()
 }
 
 @ApplicationScoped

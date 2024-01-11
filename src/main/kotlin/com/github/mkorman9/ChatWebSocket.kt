@@ -78,7 +78,7 @@ class ChatWebSocket(
             JsonObject.of()
                 .put("username", joiningUser.username)
                 .put("users",
-                    chatUsersStore.all.list().map { c ->
+                    chatUsersStore.all.list.map { c ->
                         JsonObject.of()
                             .put("username", c.username)
                     }
