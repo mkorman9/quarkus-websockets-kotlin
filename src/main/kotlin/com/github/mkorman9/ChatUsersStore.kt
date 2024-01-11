@@ -66,17 +66,11 @@ class ChatUsersStore {
         return user
     }
 
-    fun unregister(session: Session) {
-        users.remove(session.id)
-    }
+    fun unregister(session: Session) = users.remove(session.id)
 
-    fun findBySession(session: Session): ChatUser? {
-        return users[session.id]
-    }
+    fun findBySession(session: Session): ChatUser? = users[session.id]
 
-    fun findByUsername(username: String): ChatUser? {
-        return users.values.find { c -> c.username == username }
-    }
+    fun findByUsername(username: String): ChatUser? = users.values.find { c -> c.username == username }
 
     val all get() = ChatUsersList(users.values)
 }
