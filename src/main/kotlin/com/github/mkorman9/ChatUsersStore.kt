@@ -3,22 +3,26 @@ package com.github.mkorman9
 import io.vertx.core.json.JsonObject
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.websocket.Session
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 data class ChatUser(
     val session: Session,
     val username: String
 ) {
-    fun send(type: String, data: JsonObject) {
-        send(session, type, data)
-    }
+    fun send(type: String, data: JsonObject): Boolean = send(session, type, data)
 
     companion object {
-        fun send(session: Session, type: String, data: JsonObject) {
+        fun send(session: Session, type: String, data: JsonObject): Boolean {
             val packet = JsonObject.of()
                 .put("type", type)
                 .put("data", data)
-            session.basicRemote.sendText(packet.encode())
+            return try {
+                session.basicRemote.sendText(packet.encode())
+                true
+            } catch (_: IOException) {
+                false
+            }
         }
     }
 }
