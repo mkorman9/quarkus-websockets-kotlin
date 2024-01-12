@@ -1,30 +1,15 @@
 package com.github.mkorman9
 
-import io.vertx.core.json.JsonObject
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.websocket.Session
-import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 data class ChatUser(
     val session: Session,
-    val username: String
+    val username: String,
+    private val packetSender: ServerPacketSender
 ) {
-    fun send(type: String, data: JsonObject): Boolean = send(session, type, data)
-
-    companion object {
-        fun send(session: Session, type: String, data: JsonObject): Boolean {
-            val packet = JsonObject.of()
-                .put("type", type)
-                .put("data", data)
-            return try {
-                session.basicRemote.sendText(packet.encode())
-                true
-            } catch (_: IOException) {
-                false
-            }
-        }
-    }
+    fun send(packet: ServerPacket): Boolean = packetSender.send(session, packet)
 }
 
 data class ChatUsersList(
@@ -36,9 +21,9 @@ data class ChatUsersList(
         }
     )
 
-    fun broadcast(type: String, data: JsonObject) {
+    fun broadcast(packet: ServerPacket) {
         users.forEach { c ->
-            c.send(type, data)
+            c.send(packet)
         }
     }
 
@@ -46,13 +31,16 @@ data class ChatUsersList(
 }
 
 @ApplicationScoped
-class ChatUsersStore {
+class ChatUsersStore(
+    private val packetSender: ServerPacketSender
+) {
     private val users = ConcurrentHashMap<String, ChatUser>()
 
     fun register(session: Session, username: String): ChatUser {
         val user = ChatUser(
             session = session,
-            username = username
+            username = username,
+            packetSender = packetSender
         )
 
         users.compute(session.id) { _, _ ->

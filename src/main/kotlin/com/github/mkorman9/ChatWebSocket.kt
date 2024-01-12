@@ -1,6 +1,5 @@
 package com.github.mkorman9
 
-import io.vertx.core.json.JsonObject
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.websocket.CloseReason
 import jakarta.websocket.OnClose
@@ -15,7 +14,8 @@ import org.jboss.logging.Logger
 class ChatWebSocket(
     private val log: Logger,
     private val clientPacketParser: ClientPacketParser,
-    private val chatUsersStore: ChatUsersStore
+    private val chatUsersStore: ChatUsersStore,
+    private val packetSender: ServerPacketSender
 ) {
     @OnOpen
     fun onOpen(session: Session) {
@@ -27,9 +27,9 @@ class ChatWebSocket(
             chatUsersStore.all
                 .except(userToClose)
                 .broadcast(
-                    "USER_LEFT",
-                    JsonObject.of()
-                        .put("username", userToClose.username)
+                    UserLeft(
+                        username = userToClose.username
+                    )
                 )
 
             if (reason.reasonPhrase == "leaving") {
@@ -64,33 +64,32 @@ class ChatWebSocket(
         val joiningUser = try {
             chatUsersStore.register(session, joinRequest.username)
         } catch (e: DuplicateUsernameException) {
-            ChatUser.send(
+            packetSender.send(
                 session,
-                "JOIN_REJECTION",
-                JsonObject.of()
-                    .put("reason", "duplicate_username")
+                JoinRejection(
+                    reason = "duplicate_username"
+                )
             )
             return
         }
 
         joiningUser.send(
-            "JOIN_CONFIRMATION",
-            JsonObject.of()
-                .put("username", joiningUser.username)
-                .put("users",
-                    chatUsersStore.all.list.map { c ->
-                        JsonObject.of()
-                            .put("username", c.username)
-                    }
-                )
+            JoinConfirmation(
+                username = joiningUser.username,
+                users = chatUsersStore.all.list.map { c ->
+                    JoinConfirmation.User(
+                        username = c.username
+                    )
+                }
+            )
         )
 
         chatUsersStore.all
             .except(joiningUser)
             .broadcast(
-                "USER_JOINED",
-                JsonObject.of()
-                    .put("username", joiningUser.username)
+                UserJoined(
+                    username = joiningUser.username
+                )
             )
 
         log.info("${joiningUser.username} joined")
@@ -110,10 +109,10 @@ class ChatWebSocket(
 
         chatUsersStore.all
             .broadcast(
-                "CHAT_MESSAGE",
-                JsonObject.of()
-                    .put("username", user.username)
-                    .put("text", chatMessage.text)
+                ChatMessageDelivery(
+                    username = user.username,
+                    text = chatMessage.text
+                )
             )
     }
 
@@ -121,9 +120,10 @@ class ChatWebSocket(
         val targetUser = chatUsersStore.findByUsername(directMessage.to)
         if (targetUser == null) {
             user.send(
-                "DIRECT_MESSAGE_NO_USER",
-                JsonObject.of()
-                    .put("username", directMessage.to)
+                DirectMessageError(
+                    username = directMessage.to,
+                    reason = "no_user"
+                )
             )
             return
         }
@@ -131,10 +131,10 @@ class ChatWebSocket(
         log.info("[${user.username} -> ${targetUser.username}] ${directMessage.text}")
 
         targetUser.send(
-            "DIRECT_MESSAGE",
-            JsonObject.of()
-                .put("from", user.username)
-                .put("text", directMessage.text)
+            DirectMessageDelivery(
+                from = user.username,
+                text = directMessage.text
+            )
         )
     }
 }
