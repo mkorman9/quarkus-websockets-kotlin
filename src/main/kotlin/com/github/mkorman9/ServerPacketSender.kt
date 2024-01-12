@@ -26,6 +26,6 @@ class ServerPacketSender(
 }
 
 private data class RawServerPacket(
-    val type: String,
-    val data: Any
+    val type: ServerPacketType,
+    val data: ServerPacket
 )
