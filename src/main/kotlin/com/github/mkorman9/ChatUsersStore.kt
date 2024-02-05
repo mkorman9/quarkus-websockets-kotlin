@@ -9,7 +9,7 @@ data class ChatUser(
     val username: String,
     private val packetSender: ServerPacketSender
 ) {
-    fun send(packet: ServerPacket): Boolean = packetSender.send(session, packet)
+    fun send(packet: ServerPacket) = packetSender.send(session, packet)
 }
 
 data class ChatUsersList(
