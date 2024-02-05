@@ -10,7 +10,7 @@ class ServerPacketSender(
 ) {
     fun send(session: Session, packet: ServerPacket) {
         val rawPacket = RawServerPacket(
-            type = packet.getType(),
+            type = packet.packetType(),
             data = packet
         )
         session.asyncRemote.sendText(
