@@ -44,18 +44,26 @@ class ChatWebSocket(
 
     @OnMessage
     fun onMessage(session: Session, data: String) {
-        val packet = clientPacketParser.parse(data) ?: return
+        val packet = try {
+            clientPacketParser.parse(data)
+        } catch (e: PacketParsingException) {
+            log.warn("Failed to parse packet: ${e.message}")
+            return
+        }
+
         val user = chatUsersStore.findBySession(session)
 
         if (user == null) {
             when (packet) {
                 is JoinRequest -> onJoinRequest(session, packet)
+                else -> log.warn("Unrecognized packet for JOINING state: ${packet::class.simpleName}")
             }
         } else {
             when (packet) {
                 is LeaveRequest -> onLeaveRequest(user, packet)
                 is ChatMessage -> onChatMessage(user, packet)
                 is DirectMessage -> onDirectMessage(user, packet)
+                else -> log.warn("Unrecognized packet for ACTIVE state: ${packet::class.simpleName}")
             }
         }
     }

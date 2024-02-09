@@ -9,21 +9,24 @@ class ClientPacketParser(
     private val objectMapper: ObjectMapper,
     private val validator: Validator
 ) {
-    fun parse(data: String): ClientPacket? {
+    fun parse(data: String): ClientPacket {
         try {
             val rawPacket = objectMapper.readValue(data, RawClientPacket::class.java)
             if (rawPacket.type == null || rawPacket.data == null) {
-                return null
+                throw PacketParsingException("Malformed packet")
             }
 
             val packet = objectMapper.convertValue(rawPacket.data, rawPacket.type.payload.java)
-            if (validator.validate(packet).isNotEmpty()) {
-                return null
+
+            val constraintViolations = validator.validate(packet)
+            if (constraintViolations.isNotEmpty()) {
+                val messages = constraintViolations.map { "${it.propertyPath} -> ${it.message}" }
+                throw PacketParsingException("Validation error: [${messages.joinToString(", ")}]")
             }
 
             return packet
-        } catch (_: Exception) {
-            return null
+        } catch (e: Exception) {
+            throw PacketParsingException("Invalid JSON ${e.message}")
         }
     }
 }
@@ -32,3 +35,5 @@ private data class RawClientPacket(
     val type: ClientPacketType?,
     val data: Map<String, Any>?
 )
+
+class PacketParsingException(message: String) : RuntimeException(message)
