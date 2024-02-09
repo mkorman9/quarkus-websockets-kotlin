@@ -1,5 +1,6 @@
 package com.github.mkorman9
 
+import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.validation.Validator
@@ -10,24 +11,28 @@ class ClientPacketParser(
     private val validator: Validator
 ) {
     fun parse(data: String): ClientPacket {
-        try {
-            val rawPacket = objectMapper.readValue(data, RawClientPacket::class.java)
-            if (rawPacket.type == null || rawPacket.data == null) {
-                throw PacketParsingException("Malformed packet")
-            }
-
-            val packet = objectMapper.convertValue(rawPacket.data, rawPacket.type.payload.java)
-
-            val constraintViolations = validator.validate(packet)
-            if (constraintViolations.isNotEmpty()) {
-                val messages = constraintViolations.map { "${it.propertyPath} -> ${it.message}" }
-                throw PacketParsingException("Validation error: [${messages.joinToString(", ")}]")
-            }
-
-            return packet
-        } catch (e: Exception) {
+        val rawPacket = try {
+            objectMapper.readValue(data, RawClientPacket::class.java)
+        } catch (e: JacksonException) {
             throw PacketParsingException("Invalid JSON ${e.message}")
         }
+        if (rawPacket.type == null || rawPacket.data == null) {
+            throw PacketParsingException("Malformed packet")
+        }
+
+        val packet = try {
+            objectMapper.convertValue(rawPacket.data, rawPacket.type.payload.java)
+        } catch (e: IllegalArgumentException) {
+            throw PacketParsingException("Conversion error ${e.message}")
+        }
+
+        val constraintViolations = validator.validate(packet)
+        if (constraintViolations.isNotEmpty()) {
+            val messages = constraintViolations.map { "${it.propertyPath} -> ${it.message}" }
+            throw PacketParsingException("Validation error: [${messages.joinToString(", ")}]")
+        }
+
+        return packet
     }
 }
 
