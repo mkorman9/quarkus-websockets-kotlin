@@ -24,7 +24,7 @@ class ChatWebSocket(
     @OnClose
     fun onClose(session: Session, reason: CloseReason) {
         chatUsersStore.findBySession(session)?.let { userToClose ->
-            chatUsersStore.all
+            chatUsersStore.snapshot
                 .except(userToClose)
                 .broadcast(
                     UserLeft(
@@ -76,7 +76,7 @@ class ChatWebSocket(
         joiningUser.send(
             JoinConfirmation(
                 username = joiningUser.username,
-                users = chatUsersStore.all.list.map { c ->
+                users = chatUsersStore.snapshot.list.map { c ->
                     JoinConfirmation.User(
                         username = c.username
                     )
@@ -84,7 +84,7 @@ class ChatWebSocket(
             )
         )
 
-        chatUsersStore.all
+        chatUsersStore.snapshot
             .except(joiningUser)
             .broadcast(
                 UserJoined(
@@ -107,7 +107,7 @@ class ChatWebSocket(
     private fun onChatMessage(user: ChatUser, chatMessage: ChatMessage) {
         log.info("[${user.username}] ${chatMessage.text}")
 
-        chatUsersStore.all
+        chatUsersStore.snapshot
             .broadcast(
                 ChatMessageDelivery(
                     username = user.username,

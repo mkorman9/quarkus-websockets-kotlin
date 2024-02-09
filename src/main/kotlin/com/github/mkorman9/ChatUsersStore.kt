@@ -12,10 +12,10 @@ data class ChatUser(
     fun send(packet: ServerPacket) = packetSender.send(session, packet)
 }
 
-data class ChatUsersList(
-    private val users: Collection<ChatUser>
+data class ChatUsersSnapshot(
+    private val users: List<ChatUser>
 ) {
-    fun except(toExclude: ChatUser) = ChatUsersList(
+    fun except(toExclude: ChatUser) = ChatUsersSnapshot(
         users.filter { c ->
             c.session.id != toExclude.session.id
         }
@@ -60,7 +60,7 @@ class ChatUsersStore(
 
     fun findByUsername(username: String): ChatUser? = users.values.find { c -> c.username == username }
 
-    val all get() = ChatUsersList(users.values)
+    val snapshot get() = ChatUsersSnapshot(users.values.toList())
 }
 
 class DuplicateUsernameException : RuntimeException()
