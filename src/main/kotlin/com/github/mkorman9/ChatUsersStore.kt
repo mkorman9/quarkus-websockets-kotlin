@@ -1,5 +1,7 @@
 package com.github.mkorman9
 
+import com.github.mkorman9.packets.ServerPacket
+import com.github.mkorman9.packets.ServerPacketSender
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.websocket.Session
 import java.util.concurrent.ConcurrentHashMap

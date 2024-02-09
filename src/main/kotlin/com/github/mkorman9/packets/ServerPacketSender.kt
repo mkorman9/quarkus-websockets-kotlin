@@ -1,4 +1,4 @@
-package com.github.mkorman9
+package com.github.mkorman9.packets
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.enterprise.context.ApplicationScoped

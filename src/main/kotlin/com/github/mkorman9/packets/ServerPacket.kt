@@ -1,4 +1,4 @@
-package com.github.mkorman9
+package com.github.mkorman9.packets
 
 enum class ServerPacketType {
     USER_LEFT,

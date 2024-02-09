@@ -1,4 +1,4 @@
-package com.github.mkorman9
+package com.github.mkorman9.packets
 
 import jakarta.validation.constraints.NotBlank
 import kotlin.reflect.KClass
@@ -19,7 +19,6 @@ data class JoinRequest(
 ) : ClientPacket
 
 class LeaveRequest : ClientPacket
-
 
 enum class ClientPacketType(
     val payload: KClass<out ClientPacket>
