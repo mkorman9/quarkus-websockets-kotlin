@@ -86,6 +86,10 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <args>
+                        <arg>-java-parameters</arg>
+                    </args>
+
                     <compilerPlugins>
                         <plugin>all-open</plugin>
                     </compilerPlugins>
